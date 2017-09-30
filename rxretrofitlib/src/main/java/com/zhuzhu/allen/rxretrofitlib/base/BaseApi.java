@@ -1,6 +1,7 @@
 package com.zhuzhu.allen.rxretrofitlib.base;
 
 import com.trello.rxlifecycle.components.support.RxAppCompatActivity;
+import com.trello.rxlifecycle.components.support.RxFragment;
 import com.zhuzhu.allen.rxretrofitlib.exception.HttpResultException;
 import com.zhuzhu.allen.rxretrofitlib.listener.HttpOnNextListener;
 
@@ -18,6 +19,8 @@ import rx.functions.Func1;
 public abstract class BaseApi<T> implements Func1<BaseResultEntity<T>, T> {
     /*rx与activity绑定，管理生命周期，软引用防止内存泄漏*/
     private SoftReference<RxAppCompatActivity> rxAppCompatActivity;
+    /*rx与fragment绑定，管理生命周期，软引用防止内存泄漏*/
+    private SoftReference<RxFragment> rxFragment;
     /*请求结果回调*/
     private SoftReference<HttpOnNextListener> listener;
     /*是否能取消加载框*/
@@ -45,10 +48,19 @@ public abstract class BaseApi<T> implements Func1<BaseResultEntity<T>, T> {
     /*缓存URL--可手动设置*/
     private String cacheUrl;
 
-    /*构造函数*/
+    /*构造函数--RxAppCompatActivity*/
     public BaseApi(HttpOnNextListener listener, RxAppCompatActivity rxAppCompatActivity) {
         setListener(listener);
         setRxAppCompatActivity(rxAppCompatActivity);
+        /*默认显示加载框和需要缓存处理*/
+        setShowProgress(true);
+        setCacheNeeded(true);
+    }
+
+    /*构造函数--RxFragment*/
+    public BaseApi(HttpOnNextListener listener, RxFragment rxFragment) {
+        setListener(listener);
+        setRxFragment(rxFragment);
         /*默认显示加载框和需要缓存处理*/
         setShowProgress(true);
         setCacheNeeded(true);
@@ -74,6 +86,14 @@ public abstract class BaseApi<T> implements Func1<BaseResultEntity<T>, T> {
             throw new HttpResultException(tBaseResultEntity.getMsg());
         }
         return tBaseResultEntity.getData();
+    }
+
+    public RxFragment getRxFragment() {
+        return rxFragment.get();
+    }
+
+    public void setRxFragment(RxFragment rxFragment) {
+        this.rxFragment = new SoftReference<>(rxFragment);
     }
 
     /*获取当前rx生命周期*/

@@ -43,7 +43,7 @@ public class MainActivity extends RxAppCompatActivity {
         SubjectResultApi resultApi = new SubjectResultApi(listener, this);
         resultApi.setAll(true);
         HttpManager manager = HttpManager.getInstance();
-        manager.connToServer(resultApi);
+        manager.activityConnToServer(resultApi);
     }
 
     /*监听回调*/

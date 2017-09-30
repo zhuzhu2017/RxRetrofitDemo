@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.widget.Toast;
 
 import com.trello.rxlifecycle.components.support.RxAppCompatActivity;
+import com.trello.rxlifecycle.components.support.RxFragment;
 import com.zhuzhu.allen.rxretrofitlib.RxRetrofitApp;
 import com.zhuzhu.allen.rxretrofitlib.base.BaseApi;
 import com.zhuzhu.allen.rxretrofitlib.cookie.CookieResult;
@@ -34,15 +35,28 @@ public class ProgressSubscriber<T> extends Subscriber<T> {
     private SoftReference<HttpOnNextListener> mSubscriberOnNextListener;
     //软引用防止内存泄漏
     private SoftReference<RxAppCompatActivity> mActivity;
+    private SoftReference<RxFragment> mFragment;
     //加载框对象——可以自定义
     private ProgressDialog dialog;
     //请求的封装数据
     private BaseApi baseApi;
 
-    public ProgressSubscriber(BaseApi baseApi) {
+    /*rxActivity构造函数*/
+    public ProgressSubscriber(BaseApi baseApi, RxAppCompatActivity rxAppCompatActivity) {
         this.baseApi = baseApi;
         this.mSubscriberOnNextListener = baseApi.getListener();
-        this.mActivity = new SoftReference<RxAppCompatActivity>(baseApi.getRxAppCompatActivity());
+        this.mActivity = new SoftReference<RxAppCompatActivity>(rxAppCompatActivity);
+        setShowProgress(baseApi.isShowProgress());
+        if (baseApi.isShowProgress()) {   //设置加载框显示的时候，初始化加载框
+            initProgressDialog(baseApi.isCanCancelProgress());
+        }
+    }
+
+    /*rxFragment构造函数*/
+    public ProgressSubscriber(BaseApi baseApi, RxFragment rxFragment) {
+        this.baseApi = baseApi;
+        this.mSubscriberOnNextListener = baseApi.getListener();
+        this.mFragment = new SoftReference<RxFragment>(rxFragment);
         setShowProgress(baseApi.isShowProgress());
         if (baseApi.isShowProgress()) {   //设置加载框显示的时候，初始化加载框
             initProgressDialog(baseApi.isCanCancelProgress());
@@ -55,7 +69,14 @@ public class ProgressSubscriber<T> extends Subscriber<T> {
      * @param canCancelProgress 是否能取消显示加载框
      */
     private void initProgressDialog(boolean canCancelProgress) {
-        Context context = mActivity.get();
+        Context context;
+        if (mActivity != null) {
+            context = mActivity.get();
+        } else if (mFragment != null) {
+            context = mFragment.get().getContext();
+        } else {
+            context = null;
+        }
         if (dialog == null && context != null) {
             dialog = new ProgressDialog(context);
             dialog.setCancelable(canCancelProgress);
@@ -89,7 +110,14 @@ public class ProgressSubscriber<T> extends Subscriber<T> {
     private void showProgressDialog() {
         //没有设置显示进度框的话直接返回
         if (!isShowProgress()) return;
-        Context context = mActivity.get();
+        Context context;
+        if (mActivity != null) {
+            context = mActivity.get();
+        } else if (mFragment != null) {
+            context = mFragment.get().getContext();
+        } else {
+            context = null;
+        }
         if (dialog == null || context == null) return;
         if (!dialog.isShowing()) {
             dialog.show();
@@ -183,12 +211,13 @@ public class ProgressSubscriber<T> extends Subscriber<T> {
 
     /**
      * 将onNext方法中返回的结果交给Activity或者Fragment自己处理
+     *
      * @param t 创建Subscriber时候的泛型类型
      */
     @Override
     public void onNext(T t) {
         //触发请求结果回调
-        if(mSubscriberOnNextListener.get() != null){
+        if (mSubscriberOnNextListener.get() != null) {
             mSubscriberOnNextListener.get().onNext(t);
         }
     }
@@ -199,7 +228,14 @@ public class ProgressSubscriber<T> extends Subscriber<T> {
      * @param e 异常
      */
     private void dealError(Throwable e) {
-        Context context = mActivity.get();
+        Context context;
+        if (mActivity != null) {
+            context = mActivity.get();
+        } else if (mFragment != null) {
+            context = mFragment.get().getContext();
+        } else {
+            context = null;
+        }
         if (context == null) return;
         if (e instanceof SocketTimeoutException) {
             Toast.makeText(context, "网络中断，请检查您的网络状态", Toast.LENGTH_SHORT).show();

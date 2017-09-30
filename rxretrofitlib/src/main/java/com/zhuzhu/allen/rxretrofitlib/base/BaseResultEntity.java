@@ -8,16 +8,16 @@ import java.io.Serializable;
  */
 
 public class BaseResultEntity<T> implements Serializable {
-    private int ret;
+    private int code;
     private String msg;
     private T data;
 
     public int getCode() {
-        return ret;
+        return code;
     }
 
     public void setCode(int code) {
-        this.ret = code;
+        this.code = code;
     }
 
     public String getMsg() {
